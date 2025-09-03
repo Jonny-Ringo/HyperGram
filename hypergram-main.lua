@@ -824,7 +824,7 @@ app = [=[<!DOCTYPE html>
                     console.log('Sending message:', message, 'to chat:', currentChat);
                     
                     // Send message using HyperSite pattern - direct to main process
-                    const url = `/${processId}/push&action=send-message&sender=${encodeURIComponent(userAddress)}&chat_id=${encodeURIComponent(currentChat)}&message=${encodeURIComponent(message)}&!`;
+                    const url = `/${processId}/push?action=send-message&sender=${encodeURIComponent(userAddress)}&chat_id=${encodeURIComponent(currentChat)}&message=${encodeURIComponent(message)}&!`;
                     console.log('Message URL:', url);
                     
                     const response = await fetch(url, {
@@ -1378,4 +1378,5 @@ print("📋 Available member actions:")
 print("   • add-member, get-members")
 print("   • update-member-profile")
 print("🎯 Main process only stores chat index/references for optimal scalability")
+
 print("🔒 Secure local reset function available: reset_chat_registry()")
