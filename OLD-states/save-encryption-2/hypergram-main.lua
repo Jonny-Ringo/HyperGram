@@ -422,6 +422,7 @@ app = [=[<!DOCTYPE html>
             try {
                 // User initialization simplified - no authentication needed
                 // The user is automatically recognized by their wallet address
+                console.log('User initialized:', userAddress);
                 
                 // Don't load chats here - do it after showing the interface
             } catch (error) {
@@ -445,6 +446,7 @@ app = [=[<!DOCTYPE html>
 
                 // Use GraphQL to query Arweave network for all addresses (including connected user)
                 try {
+                    console.log(`Fetching public key for address: ${address}`);
                     const query = `
                     query {
                         transactions(owners: ["${address}"], first: 1) {
@@ -466,12 +468,14 @@ app = [=[<!DOCTYPE html>
                     });
                     
                     const data = await response.json();
+                    console.log('GraphQL response:', data);
                     const publicKeyData = data.data.transactions.edges[0]?.node.owner.key;
                     
                     if (!publicKeyData) {
                         throw new Error(`No public key found for address: ${address}`);
                     }
                     
+                    console.log('Got public key data:', publicKeyData);
                     // Convert Arweave public key to WebCrypto format
                     const publicKey = await this.importArweavePublicKey(publicKeyData);
                     this.publicKeys[address] = publicKey;
@@ -687,31 +691,6 @@ app = [=[<!DOCTYPE html>
         const hybridCrypto = new ArweaveHybridCrypto();
         
         // Helper function to get recipient address from chat
-        // Get recipient address from already captured state (no extra server calls)
-        async function getRecipientAddressFromState(chatState, chatId) {
-            try {
-                // First try to extract from state if it has messages with participant info
-                if (chatState && chatState.messages && chatState.messages.length > 0) {
-                    // Look through messages to find a different sender
-                    for (const msg of chatState.messages) {
-                        if (typeof msg === 'string') {
-                            // This is an encrypted message, can't extract sender
-                            continue;
-                        }
-                        if (msg.sender && msg.sender !== userAddress) {
-                            return msg.sender;
-                        }
-                    }
-                }
-                
-                // Fallback to server call if we can't extract from state
-                return await getRecipientAddress(chatId);
-            } catch (error) {
-                console.error('Failed to get recipient from state:', error);
-                return await getRecipientAddress(chatId);
-            }
-        }
-
         async function getRecipientAddress(chatId) {
             try {
                 // Load chat data to get participants
@@ -745,6 +724,7 @@ app = [=[<!DOCTYPE html>
         
         async function loadUserChats() {
             try {
+                console.log('Loading user chats for:', userAddress);
                 
                 // Load all chats from chats_registry_json and filter for user
                 const response = await fetch(`/${processId}/now/chats_registry_json`, {
@@ -752,16 +732,21 @@ app = [=[<!DOCTYPE html>
                 });
                 const chatsRegistryText = await response.text();
                 
+                console.log('Chats registry response:', chatsRegistryText);
+                console.log('Response length:', chatsRegistryText.length);
                 
                 if (chatsRegistryText && chatsRegistryText !== '{}' && chatsRegistryText !== 'null' && chatsRegistryText.trim() !== '') {
                     try {
                         // Parse the chats registry
                         const allChats = JSON.parse(chatsRegistryText);
+                        console.log('Parsed all chats:', allChats);
                         
                         // Filter chats where user is a participant
                         const userChats = [];
                         Object.keys(allChats).forEach(chatId => {
                             const chat = allChats[chatId];
+                            console.log(`Checking chat ${chatId}:`, chat);
+                            console.log(`Participants: ${chat.participants}, includes user: ${chat.participants && chat.participants.includes(userAddress)}`);
                             
                             // Check if user is a member using the new member objects
                             let isUserMember = false;
@@ -790,6 +775,7 @@ app = [=[<!DOCTYPE html>
                                     chatName = 'New Chat';
                                 }
                                 
+                                console.log('Generated chat name:', chatName);
                                 
                                 userChats.push({
                                     id: chatId,
@@ -804,13 +790,16 @@ app = [=[<!DOCTYPE html>
                                 // Store process ID for easy access
                                 chatProcessIds[chatId] = chat.process_id;
                                 
+                                console.log(`Added chat: ${chatId} with processId: ${chat.process_id}`);
                             }
                         });
                         
+                        console.log('Filtered user chats:', userChats);
                         
                         if (userChats.length > 0) {
                             renderChatsList(userChats);
                         } else {
+                            console.log('No user chats found, showing empty state');
                             document.getElementById('chatsList').innerHTML = '<p style="padding: 1rem; color: #666;">No chats yet. Click "New Chat" to start messaging!</p>';
                         }
                     } catch (parseError) {
@@ -820,12 +809,9 @@ app = [=[<!DOCTYPE html>
                     }
                 } else {
                     // No chats yet, show empty state
+                    console.log('Empty or null chats registry, showing empty state');
                     document.getElementById('chatsList').innerHTML = '<p style="padding: 1rem; color: #666;">No chats yet. Click "New Chat" to start messaging!</p>';
                 }
-                
-                // Reset auto-refresh countdown after loading chats
-                resetAutoRefreshCountdown();
-                
             } catch (error) {
                 console.error('Failed to load user chats:', error);
                 document.getElementById('chatsList').innerHTML = '<p style="padding: 1rem; color: #666;">Failed to load chats. Click "New Chat" to start messaging!</p>';
@@ -833,6 +819,7 @@ app = [=[<!DOCTYPE html>
         }
         
         function renderChatsList(chats) {
+            console.log('renderChatsList called with:', chats);
             const chatsList = document.getElementById('chatsList');
             
             if (!chatsList) {
@@ -841,6 +828,7 @@ app = [=[<!DOCTYPE html>
             }
             
             if (!chats || chats.length === 0) {
+                console.log('No chats to render');
                 chatsList.innerHTML = '<p style="padding: 1rem; color: #666;">No chats available</p>';
                 return;
             }
@@ -868,36 +856,65 @@ app = [=[<!DOCTYPE html>
                 </div>
             `).join('');
             
+            console.log('Setting chatsList HTML:', chatHTML);
             chatsList.innerHTML = chatHTML;
             
             // Debug the chatsList element styling
             const chatListStyles = window.getComputedStyle(chatsList);
+            console.log('ChatsList element info:');
+            console.log('- Display:', chatListStyles.display);
+            console.log('- Visibility:', chatListStyles.visibility);
+            console.log('- Height:', chatListStyles.height);
+            console.log('- Width:', chatListStyles.width);
+            console.log('- Opacity:', chatListStyles.opacity);
+            console.log('- Position:', chatListStyles.position);
+            console.log('- Parent element:', chatsList.parentElement);
             
             // Check if sidebar is visible
             const sidebar = document.getElementById('sidebar');
             if (sidebar) {
                 const sidebarStyles = window.getComputedStyle(sidebar);
+                console.log('Sidebar display:', sidebarStyles.display);
+                console.log('Sidebar visibility:', sidebarStyles.visibility);
+                console.log('Sidebar classes:', sidebar.className);
+                console.log('Sidebar style attribute:', sidebar.style.cssText);
                 
                 // Also check what CSS rules are being applied
+                console.log('Full sidebar computed styles:');
+                console.log('- Position:', sidebarStyles.position);
+                console.log('- Left:', sidebarStyles.left);
+                console.log('- Right:', sidebarStyles.right);
+                console.log('- Top:', sidebarStyles.top);
+                console.log('- Transform:', sidebarStyles.transform);
+                console.log('- Z-index:', sidebarStyles.zIndex);
+                console.log('- Overflow:', sidebarStyles.overflow);
             }
             
             // Let's also force a visual check by adding a temporary background
+            console.log('Adding temporary red background to chatsList for debugging...');
             
             // And check all parent elements
             let parent = chatsList.parentElement;
             let level = 0;
             while (parent && level < 5) {
                 const parentStyles = window.getComputedStyle(parent);
+                console.log(`Parent ${level} (${parent.tagName}#${parent.id || 'no-id'}.${parent.className || 'no-class'}):`);
+                console.log(`- Display: ${parentStyles.display}`);
+                console.log(`- Visibility: ${parentStyles.visibility}`);
+                console.log(`- Overflow: ${parentStyles.overflow}`);
+                console.log(`- Height: ${parentStyles.height}`);
                 parent = parent.parentElement;
                 level++;
             }
             
             // Add click handlers and hover effects
             const chatItems = document.querySelectorAll('.chat-item');
+            console.log('Found chat items:', chatItems.length);
             
             chatItems.forEach(item => {
                 // Click handler
                 item.addEventListener('click', () => {
+                    console.log('Chat clicked:', item.dataset.chatId);
                     selectChat(item.dataset.chatId);
                 });
                 
@@ -963,9 +980,6 @@ app = [=[<!DOCTYPE html>
             document.getElementById('updateStatus').style.display = 'block';
             document.getElementById('updateStatus').textContent = 'Updated';
             
-            // Start auto-refresh timer
-            startAutoRefresh();
-            
             // Load chat messages
             await loadChatMessages(chatId);
         }
@@ -975,13 +989,6 @@ app = [=[<!DOCTYPE html>
         
         // Current chat state tracking for refresh
         let currentChatState = null;
-        
-        // Auto-refresh timer variables
-        let autoRefreshTimer = null;
-        let autoRefreshCountdown = 20; // seconds
-        let isWindowFocused = true;
-        let isAutoRefreshEnabled = false;
-        let isRefreshInProgress = false;
         
         // Add refresh button functionality
         document.getElementById('refreshBtn').addEventListener('click', async () => {
@@ -993,6 +1000,8 @@ app = [=[<!DOCTYPE html>
                 
                 // Get current server state
                 const serverState = await getCurrentChatState(currentChat);
+                console.log('Refresh - Server state:', serverState);
+                console.log('Refresh - Current state:', currentChatState);
                 
                 // Compare with our current state
                 if (currentChatState && 
@@ -1000,10 +1009,12 @@ app = [=[<!DOCTYPE html>
                     serverState.messageCount === currentChatState.messageCount) {
                     
                     // No changes - just update status
+                    console.log('✅ No new messages - state unchanged');
                     document.getElementById('updateStatus').textContent = 'Updated';
                     
                 } else {
                     // New messages detected - need to reload and decrypt
+                    console.log('📬 New messages detected - reloading...');
                     document.getElementById('updateStatus').textContent = 'Loading...';
                     
                     // Clear local cache to force reload and decrypt
@@ -1015,10 +1026,9 @@ app = [=[<!DOCTYPE html>
                     // Update our current state
                     currentChatState = serverState;
                     document.getElementById('updateStatus').textContent = 'Updated';
+                    
+                    console.log('✅ Messages refreshed successfully');
                 }
-                
-                // Reset auto-refresh countdown after manual refresh
-                resetAutoRefreshCountdown();
                 
             } catch (error) {
                 console.error('Refresh failed:', error);
@@ -1039,102 +1049,9 @@ app = [=[<!DOCTYPE html>
             this.style.transform = 'scale(1)';
         });
         
-        // Window visibility detection for auto-refresh (only pause when tab/window is hidden)
-        document.addEventListener('visibilitychange', function() {
-            isWindowFocused = document.visibilityState === 'visible';
-            updateAutoRefreshStatus();
-        });
-        
-        // Auto-refresh timer system
-        function startAutoRefresh() {
-            if (autoRefreshTimer) return; // Already running
-            
-            isAutoRefreshEnabled = true;
-            autoRefreshCountdown = 20;
-            
-            autoRefreshTimer = setInterval(() => {
-                // Only countdown when window is visible and user isn't typing
-                const messageInput = document.getElementById('messageInput');
-                const isTyping = messageInput && document.activeElement === messageInput;
-                
-                if (isWindowFocused && !isTyping && currentChat) {
-                    autoRefreshCountdown--;
-                    updateAutoRefreshStatus();
-                    
-                    if (autoRefreshCountdown <= 0 && !isRefreshInProgress) {
-                        performAutoRefresh();
-                    }
-                }
-            }, 1000); // Check every second
-        }
-        
-        function stopAutoRefresh() {
-            if (autoRefreshTimer) {
-                clearInterval(autoRefreshTimer);
-                autoRefreshTimer = null;
-            }
-            isAutoRefreshEnabled = false;
-            updateAutoRefreshStatus();
-        }
-        
-        function resetAutoRefreshCountdown() {
-            autoRefreshCountdown = 20;
-            updateAutoRefreshStatus();
-        }
-        
-        async function performAutoRefresh() {
-            // Prevent multiple simultaneous refreshes
-            if (isRefreshInProgress) return;
-            isRefreshInProgress = true;
-            
-            // Immediately reset countdown to prevent multiple triggers
-            autoRefreshCountdown = 20;
-            updateAutoRefreshStatus();
-            
-            try {
-                // Use the existing smart refresh logic
-                const serverState = await getCurrentChatState(currentChat);
-                
-                if (currentChatState && 
-                    serverState.stateHash === currentChatState.stateHash && 
-                    serverState.messageCount === currentChatState.messageCount) {
-                    // No changes - timer already reset above
-                    document.getElementById('updateStatus').textContent = 'Updated';
-                } else {
-                    // New messages detected - use messages from the state request
-                    document.getElementById('updateStatus').textContent = 'Loading new messages...';
-                    delete localMessagesCache[currentChat];
-                    await renderMessages(serverState.messages);
-                    currentChatState = serverState;
-                    document.getElementById('updateStatus').textContent = 'Updated';
-                }
-            } catch (error) {
-                console.error('Auto-refresh failed:', error);
-                document.getElementById('updateStatus').textContent = 'Auto-refresh error';
-                // Timer already reset above
-            } finally {
-                isRefreshInProgress = false;
-            }
-        }
-        
-        function updateAutoRefreshStatus() {
-            const statusElement = document.getElementById('updateStatus');
-            if (!statusElement || !isAutoRefreshEnabled) return;
-            
-            if (!isWindowFocused) {
-                statusElement.textContent = 'Paused (tab hidden)';
-                statusElement.style.color = 'var(--text-secondary)';
-            } else if (autoRefreshCountdown > 0) {
-                statusElement.textContent = `Auto-refresh in ${autoRefreshCountdown}s`;
-                statusElement.style.color = 'var(--text-secondary)';
-            } else {
-                statusElement.textContent = 'Refreshing...';
-                statusElement.style.color = 'var(--primary)';
-            }
-        }
-        
         async function loadChatMessages(chatId) {
             try {
+                console.log('Loading messages for chat:', chatId);
                 
                 // Load messages directly from main process chats_storage
                 const response = await fetch(`/${processId}/now/chats_registry_json`, {
@@ -1143,27 +1060,27 @@ app = [=[<!DOCTYPE html>
                 
                 if (response.ok) {
                     const chatsData = await response.text();
+                    console.log('Chats data response:', chatsData);
                     
                     if (chatsData && chatsData !== '{}' && chatsData !== 'null' && chatsData.trim() !== '') {
                         const allChats = JSON.parse(chatsData);
                         const chat = allChats[chatId];
                         
                         if (chat && chat.messages) {
+                            console.log('Found messages for chat:', chat.messages);
                             await renderMessages(chat.messages);
                         } else {
+                            console.log('No messages found for chat:', chatId);
                             await renderMessages([]);
                         }
                     } else {
+                        console.log('No chats data available');
                         await renderMessages([]);
                     }
                 } else {
                     console.error('Failed to fetch chats data:', response.status);
                     await renderMessages([]);
                 }
-                
-                // Reset auto-refresh countdown after loading chat messages
-                resetAutoRefreshCountdown();
-                
             } catch (error) {
                 console.error('Failed to load chat messages:', error);
                 await renderMessages([]);
@@ -1183,10 +1100,12 @@ app = [=[<!DOCTYPE html>
                 messages[0].includes('encryptedMessages')) {
                 
                 try {
+                    console.log('Decrypting entire chat messages array...');
                     const encryptedChatPackage = JSON.parse(messages[0]);
                     
                     // Decrypt entire chat with ONE wallet popup
                     decryptedMessages = await hybridCrypto.decryptChatMessages(encryptedChatPackage, userAddress);
+                    console.log('Chat messages decrypted successfully:', decryptedMessages.length, 'messages');
                     
                     // Mark all loaded messages as successfully sent (they're from server state)
                     decryptedMessages = decryptedMessages.map(msg => ({
@@ -1216,10 +1135,12 @@ app = [=[<!DOCTYPE html>
             } 
             // Check if we have local cache (for instant display)
             else if (localMessagesCache[currentChatId] && localMessagesCache[currentChatId].length > 0) {
+                console.log('Using local messages cache');
                 decryptedMessages = localMessagesCache[currentChatId];
             }
             // Legacy format or no encryption
             else {
+                console.log('Processing messages in legacy format');
                 decryptedMessages = messages || [];
             }
             
@@ -1241,8 +1162,8 @@ app = [=[<!DOCTYPE html>
                         statusIcon = '&#8987;'; // Hourglass
                         statusColor = '#ff9800';
                     } else if (deliveryStatus === 'conflict') {
-                        statusIcon = `<span onclick="resendMessage('${msg.id || index}')" style="cursor: pointer; text-decoration: underline; font-size: 0.7rem; color: #2196f3;">Resend</span>`;
-                        statusColor = '#2196f3';
+                        statusIcon = '&#10060;'; // Red X
+                        statusColor = '#f44336';
                     } else if (deliveryStatus === 'failed') {
                         statusIcon = '&#9888;'; // Warning triangle
                         statusColor = '#f44336';
@@ -1289,8 +1210,8 @@ app = [=[<!DOCTYPE html>
                         statusElement.innerHTML = '&#9989;'; // White checkmark in green square - verified
                         statusElement.style.color = '#4caf50';
                     } else if (status === 'conflict') {
-                        statusElement.innerHTML = '<span onclick="resendMessage(\'' + messageId + '\')" style="cursor: pointer; text-decoration: underline; font-size: 0.7rem;">Resend</span>';
-                        statusElement.style.color = '#2196f3'; // Blue color like a link
+                        statusElement.innerHTML = '&#10060;'; // Red X - conflict detected
+                        statusElement.style.color = '#f44336';
                     } else if (status === 'failed') {
                         statusElement.innerHTML = '&#9888;'; // Warning triangle - failed
                         statusElement.style.color = '#f44336';
@@ -1446,6 +1367,8 @@ app = [=[<!DOCTYPE html>
             try {
                 // Use the proper process device endpoint for scheduling messages
                 const url = `/${processId}/schedule&!`;
+                console.log('Creating chat with URL:', url);
+                console.log('Chat nickname:', chatNickname);
                 
                 // Create proper AO message structure
                 const participants = `${userAddress},${otherUser}`;
@@ -1464,9 +1387,12 @@ app = [=[<!DOCTYPE html>
                     body: JSON.stringify(aoMessage)
                 });
                 
+                console.log('Chat creation request status:', response.status);
+                console.log('Chat creation request ok:', response.ok);
                 
                 if (response.ok) {
                     // Don't try to parse JSON - just refresh the chat list
+                    console.log('Chat creation request sent successfully');
                     
                     // Wait a moment for the backend to process, then refresh
                     setTimeout(async () => {
@@ -1475,6 +1401,7 @@ app = [=[<!DOCTYPE html>
                     }, 1000);
                 } else {
                     const errorText = await response.text();
+                    console.log('Chat creation error response:', errorText);
                     alert('Failed to create chat. Please try again.');
                 }
             } catch (error) {
@@ -1495,8 +1422,6 @@ app = [=[<!DOCTYPE html>
         // Chat state tracking for race condition detection
         let chatStates = {};
         
-        // Chat states for race condition detection and manual resends
-        
         // Get current server chat state for verification
         async function getCurrentChatState(chatId) {
             try {
@@ -1511,16 +1436,15 @@ app = [=[<!DOCTYPE html>
                                 stateHash: chat.stateHash || null,
                                 messageCount: chat.messageCount || 0,
                                 lastUpdated: chat.lastUpdated || 0,
-                                exists: true,
-                                messages: chat.messages || []
+                                exists: true
                             };
                         }
                     }
                 }
-                return { stateHash: null, messageCount: 0, lastUpdated: 0, exists: false, messages: [] };
+                return { stateHash: null, messageCount: 0, lastUpdated: 0, exists: false };
             } catch (error) {
                 console.error('Failed to get current chat state:', error);
-                return { stateHash: null, messageCount: 0, lastUpdated: 0, exists: false, messages: [] };
+                return { stateHash: null, messageCount: 0, lastUpdated: 0, exists: false };
             }
         }
 
@@ -1554,9 +1478,11 @@ app = [=[<!DOCTYPE html>
                 addMessageToDisplay(newMessage);
                 
                 try {
+                    console.log('Sending message:', message, 'to chat:', currentChat);
                     
-                    // STEP 1: Use stored state for race condition detection
-                    const preEncryptionState = currentChatState || { stateHash: null, messageCount: 0, lastUpdated: 0, exists: false, messages: [] };
+                    // STEP 1: Get current server state before encryption
+                    const preEncryptionState = await getCurrentChatState(currentChat);
+                    console.log('Pre-encryption state:', preEncryptionState);
                     
                     // Store the expected pre-state for verification
                     chatStates[messageId] = {
@@ -1566,34 +1492,72 @@ app = [=[<!DOCTYPE html>
                         timestamp: Date.now()
                     };
                     
-                    // Get recipient address from the already captured state (avoid extra server calls)
-                    const recipientAddress = await getRecipientAddressFromState(preEncryptionState, currentChat);
+                    // Get recipient address from current chat
+                    const recipientAddress = await getRecipientAddress(currentChat);
                     if (!recipientAddress) {
                         alert('Cannot determine recipient address');
                         updateMessageStatus(messageId, 'failed');
                         return;
                     }
                     
+                    console.log('Encrypting entire chat messages array for:', recipientAddress);
                     
-                    // Prepare encrypted chat package for verification
+                    // Get current messages array (including the new message)
                     const currentMessages = localMessagesCache[currentChat] || [];
+                    
+                    // Encrypt entire messages array using new method
                     const encryptedChatPackage = await hybridCrypto.encryptChatMessages(
                         currentMessages, 
                         userAddress, 
                         recipientAddress
                     );
                     
-                    // Store package data for later verification
-                    chatStates[messageId].encryptedChatPackage = encryptedChatPackage;
-                    chatStates[messageId].recipientAddress = recipientAddress;
+                    console.log('Chat messages encrypted successfully');
                     
-                    // Mark as verifying and start verification immediately
-                    updateMessageStatus(messageId, 'verifying');
+                    // Use the proper process device endpoint for scheduling messages
+                    const url = `/${processId}~process@1.0/schedule&!`;
+                    console.log('Chat update URL:', url);
                     
-                    // Start verification immediately (not after delay)
-                    setTimeout(async () => {
-                        await verifyMessageDelivery(messageId, encryptedChatPackage.stateHash);
-                    }, 500); // Shorter delay for better responsiveness
+                    // Create proper AO message structure with encrypted chat data
+                    const aoMessage = {
+                        target: processId,
+                        action: 'update-chat-messages',
+                        Data: JSON.stringify(encryptedChatPackage), // Send entire encrypted chat
+                        sender: userAddress,
+                        chat_id: currentChat,
+                        encrypted: true,
+                        state_hash: encryptedChatPackage.stateHash, // New state hash
+                        message_count: encryptedChatPackage.messageCount,
+                        last_message_id: messageId, // Track the triggering message
+                        expected_pre_state_hash: preEncryptionState.stateHash, // What we expect server state to be
+                        expected_pre_message_count: preEncryptionState.messageCount
+                    };
+
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(aoMessage)
+                    });
+                    
+                    console.log('Chat update response status:', response.status);
+                    
+                    if (response.ok) {
+                        console.log('Chat update request sent successfully (200 response)');
+                        // Don't mark as "sent" yet - wait for verification
+                        updateMessageStatus(messageId, 'verifying');
+                        
+                        // STEP 2: Robust background verification with race condition detection
+                        setTimeout(async () => {
+                            await verifyMessageDelivery(messageId, encryptedChatPackage.stateHash);
+                        }, 2000);
+                        
+                    } else {
+                        alert('Failed to send message. Please try again.');
+                        updateMessageStatus(messageId, 'failed');
+                        delete chatStates[messageId];
+                    }
                 } catch (error) {
                     console.error('Failed to send message:', error);
                     alert('Failed to send message: ' + error.message);
@@ -1603,167 +1567,46 @@ app = [=[<!DOCTYPE html>
             }
         }
         
-        // Send chat update to backend (moved from sendMessage for proper race condition handling)
-        async function sendChatUpdateToBackend(messageState) {
-            const encryptedChatPackage = messageState.encryptedChatPackage;
-            const expectedPreState = messageState.expectedPreState;
-            
-            // Use the proper process device endpoint for scheduling messages
-            const url = `/${processId}~process@1.0/schedule&!`;
-            
-            // Create proper AO message structure with encrypted chat data
-            const aoMessage = {
-                target: processId,
-                action: 'update-chat-messages',
-                Data: JSON.stringify(encryptedChatPackage), // Send entire encrypted chat
-                sender: userAddress,
-                chat_id: messageState.chatId,
-                encrypted: true,
-                state_hash: encryptedChatPackage.stateHash, // New state hash
-                message_count: encryptedChatPackage.messageCount,
-                last_message_id: messageState.messageId, // Track the triggering message
-                expected_pre_state_hash: expectedPreState.stateHash, // What we expect server state to be
-                expected_pre_message_count: expectedPreState.messageCount
-            };
-
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(aoMessage)
-            });
-            
-            if (!response.ok) {
-                throw new Error(`Failed to send chat update: ${response.status}`);
-            }
-            
-            return response;
-        }
-
         // Verify message delivery with race condition detection
         async function verifyMessageDelivery(messageId, expectedStateHash) {
             try {
                 const messageState = chatStates[messageId];
                 if (!messageState) {
+                    console.log('Message state not found for verification:', messageId);
                     return;
                 }
                 
+                console.log('Verifying message delivery for:', messageId);
                 
-                // Get current server state to check for race conditions
-                const currentServerState = await getCurrentChatState(messageState.chatId);
+                // Get current server state
+                const currentState = await getCurrentChatState(messageState.chatId);
+                console.log('Verification - Current state:', currentState);
+                console.log('Verification - Expected state hash:', expectedStateHash);
                 
-                // Check if server state still matches our expected PRE-encryption state
-                const expectedPreState = messageState.expectedPreState;
-                
-                console.log('🔍 Race condition check:');
-                console.log('Expected pre-state:', expectedPreState);
-                console.log('Current server state:', currentServerState);
-                console.log('Hash match:', currentServerState.stateHash === expectedPreState.stateHash);
-                console.log('Count match:', currentServerState.messageCount === expectedPreState.messageCount);
-                
-                // Enhanced race condition detection - if either state hash is null/undefined, use message count + timestamp
-                const hashesValid = expectedPreState.stateHash && currentServerState.stateHash;
-                const hashMatch = hashesValid ? 
-                    (currentServerState.stateHash === expectedPreState.stateHash) :
-                    (currentServerState.messageCount === expectedPreState.messageCount && 
-                     Math.abs((currentServerState.lastUpdated || 0) - (expectedPreState.lastUpdated || 0)) < 5000); // Within 5 seconds
-                
-                const countMatch = currentServerState.messageCount === expectedPreState.messageCount;
-                
-                console.log('Hashes valid:', hashesValid);
-                console.log('Final hash/fallback match:', hashMatch);
-                console.log('Count match:', countMatch);
-                
-                if (hashMatch && countMatch) {
-                    
-                    // SUCCESS: No race condition detected, safe to send chat update
-                    console.log('✅ No race condition detected, sending chat update');
-                    try {
-                        await sendChatUpdateToBackend(messageState);
-                        updateMessageStatus(messageId, 'sent');
-                        delete chatStates[messageId];
-                        
-                        // Update currentChatState with the new expected state
-                        currentChatState = {
-                            stateHash: expectedStateHash,
-                            messageCount: messageState.encryptedChatPackage.messageCount,
-                            lastUpdated: Date.now(),
-                            exists: true
-                        };
-                        
-                    } catch (error) {
-                        console.error('Failed to send chat update:', error);
-                        updateMessageStatus(messageId, 'failed');
-                        delete chatStates[messageId];
-                    }
+                // Check if our update was successful
+                if (currentState.stateHash === expectedStateHash) {
+                    // SUCCESS: Our state hash matches
+                    console.log('✅ Message verified successfully - state hash matches');
+                    updateMessageStatus(messageId, 'sent');
+                    delete chatStates[messageId];
                     
                 } else {
-                    // RACE CONDITION DETECTED: Server state changed, someone else sent a message
-                    console.log('❌ RACE CONDITION DETECTED! Server state changed.');
-                    console.log('Loading new messages before allowing resend...');
+                    // RACE CONDITION DETECTED: State doesn't match
+                    console.log('⚠️ Race condition detected - state hash mismatch');
+                    console.log('Expected:', expectedStateHash);
+                    console.log('Actual:', currentState.stateHash);
                     
-                    // Store original message content for manual resend
-                    const originalMessage = localMessagesCache[messageState.chatId]?.find(msg => msg.id === messageId);
-                    if (originalMessage) {
-                        messageState.originalMessageContent = originalMessage.content;
-                    }
+                    // Mark message as failed and refresh chat
+                    updateMessageStatus(messageId, 'conflict');
                     
-                    // Show loading state and disable interactions
-                    document.getElementById('updateStatus').style.display = 'block';
-                    document.getElementById('updateStatus').textContent = 'Loading new messages...';
-                    document.getElementById('messageInput').disabled = true;
-                    document.getElementById('sendBtn').disabled = true;
-                    document.querySelector('#chatsList').classList.add('loading');
+                    // Show conflict notification
+                    showConflictNotification(messageState.chatId);
                     
-                    try {
-                        // Preserve the conflict message before refreshing
-                        const conflictMessage = localMessagesCache[messageState.chatId]?.find(msg => msg.id === messageId);
-                        
-                        // Load new messages from the server state we already fetched
-                        delete localMessagesCache[messageState.chatId];
-                        await renderMessages(currentServerState.messages);
-                        
-                        // Update our stored state with the fresh server state
-                        currentChatState = currentServerState;
-                        
-                        // Re-add the conflict message to local cache and display
-                        if (conflictMessage) {
-                            if (!localMessagesCache[messageState.chatId]) {
-                                localMessagesCache[messageState.chatId] = [];
-                            }
-                            localMessagesCache[messageState.chatId].push(conflictMessage);
-                            
-                            // Add conflict message back to display
-                            addMessageToDisplay(conflictMessage);
-                        }
-                        
-                        console.log('✅ New messages loaded. Conflict message preserved and ready for resend.');
-                        
-                        // Mark message as conflict (will show "Resend" button, now with fresh state)
-                        updateMessageStatus(messageId, 'conflict');
-                        
-                        // Show conflict notification
-                        showConflictNotification(messageState.chatId);
-                        
-                        document.getElementById('updateStatus').textContent = 'Updated';
-                        
-                    } catch (error) {
-                        console.error('Failed to load new messages:', error);
-                        updateMessageStatus(messageId, 'failed');
-                        document.getElementById('updateStatus').textContent = 'Error loading messages';
-                    } finally {
-                        // Re-enable interactions
-                        document.getElementById('messageInput').disabled = false;
-                        document.getElementById('sendBtn').disabled = false;
-                        document.querySelector('#chatsList').classList.remove('loading');
-                    }
-                    
-                    // Keep chatStates entry for manual resend (don't delete)
+                    // Auto-refresh chat after a moment
+                    setTimeout(async () => {
+                        await handleChatConflictRefresh(messageState.chatId, messageId);
+                    }, 1500);
                 }
-                
-                // Reset auto-refresh countdown after message verification
-                resetAutoRefreshCountdown();
                 
             } catch (error) {
                 console.error('Message verification failed:', error);
@@ -1772,57 +1615,35 @@ app = [=[<!DOCTYPE html>
             }
         }
         
-        // Simple manual resend function (replaces automatic retry system)
-        function resendMessage(messageId) {
+        // Handle chat conflict by refreshing from server
+        async function handleChatConflictRefresh(chatId, failedMessageId) {
             try {
-                const messageState = chatStates[messageId];
-                if (!messageState || !messageState.originalMessageContent) {
-                    console.error('Cannot resend message: state not found');
-                    return;
+                console.log('Refreshing chat due to conflict:', chatId);
+                
+                // Clear local cache to force reload
+                delete localMessagesCache[chatId];
+                
+                // Remove the failed message from display
+                const failedElement = document.querySelector(`[data-message-id="${failedMessageId}"]`);
+                if (failedElement) {
+                    failedElement.remove();
                 }
                 
-                console.log(`Manual resend requested for message ${messageId}: "${messageState.originalMessageContent}"`);
+                // Reload chat messages from server
+                await loadChatMessages(chatId);
                 
-                // Store the original message content before cleanup
-                const messageContent = messageState.originalMessageContent;
-                const chatId = messageState.chatId;
+                // Clean up state tracking
+                delete chatStates[failedMessageId];
                 
-                // Clear the old message from display
-                const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
-                if (messageElement) {
-                    messageElement.remove();
-                }
-                
-                // Remove from local messages cache to prevent duplicates
-                if (localMessagesCache[chatId]) {
-                    localMessagesCache[chatId] = localMessagesCache[chatId].filter(msg => msg.id !== messageId);
-                }
-                
-                // Clean up old chat state
-                delete chatStates[messageId];
-                
-                // Put message content in input and send
-                const messageInput = document.getElementById('messageInput');
-                const originalValue = messageInput.value;
-                
-                messageInput.value = messageContent;
-                sendMessage(); // Don't await - let it run async
-                
-                // Restore original input value if it had content
-                if (originalValue) {
-                    setTimeout(() => {
-                        messageInput.value = originalValue;
-                    }, 100);
-                }
-                
-                console.log(`✅ Message resend initiated`);
+                console.log('Chat refreshed successfully');
                 
             } catch (error) {
-                console.error('Failed to resend message:', error);
-                alert('Failed to resend message: ' + error.message);
+                console.error('Failed to refresh chat:', error);
+                // If refresh fails, at least mark the message as failed
+                updateMessageStatus(failedMessageId, 'failed');
             }
         }
-
+        
         // Show conflict notification to user
         function showConflictNotification(chatId) {
             const notification = document.createElement('div');
