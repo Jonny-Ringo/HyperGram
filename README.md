@@ -1,7 +1,7 @@
 # HyperGram - Decentralized Messaging on AO
 ## Version: Alpha 0.2.0
 
-![HyperGram](HyperGramd.png)
+![HyperGram](HyperGram.png)
 
 A secure, decentralized messaging platform built on the AO (Arweave Operating System) using HyperBeam for instant web interactions with end-to-end encryption and advanced race condition handling.
 
@@ -177,5 +177,6 @@ This project is under active development. Current focus areas:
 [License details to be added]
 
 ---
+
 
 **HyperGram** - Decentralized messaging for the permanent web
