@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HyperGram - Decentralized Messaging</title>
+    <link id="theme-link" rel="stylesheet" href="themes/default.css">
+    <link rel="icon" type="image/png" href="HyperGram.png">
+    <meta name="description" content="HyperGram - Secure, decentralized messaging built on AO. Connect your Arweave wallet to get started.">
+    <meta name="keywords" content="HyperGram, Decentralized Messaging, AO, Arweave, HyperBeam, End-to-End Encryption, Secure Chat, Wallet Integration">
+    <meta name="author" content="Jonny5">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Login Screen -->
+        <div id="loginScreen" class="login-screen">
+            <h1>HyperGram</h1>
+            <p class="subtitle">Secure, decentralized messaging built on AO. Connect your Wander wallet to get started.</p>
+            <button id="connectWallet" class="connect-btn">Connect Wallet</button>
+            <div id="walletStatus" class="wallet-status"></div>
+        </div>
+        
+        <!-- Main App Interface -->
+        <div id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <h3>HyperGram</h3>
+                <p id="userAddress" class="user-info">
+                    <span class="wallet-icon">💳</span>
+                    <span class="wallet-address">Connect wallet...</span>
+                    <button class="disconnect-wallet-btn" onclick="disconnectWallet()" title="Switch wallet">Switch</button>
+                </p>
+                <div class="options-menu">
+                    <button id="optionsBtn" class="options-btn">
+                        <span class="options-icon">⚙️</span>
+                        <span class="options-text">Options</span>
+                        <span class="options-arrow">▼</span>
+                    </button>
+                    <div id="optionsDropdown" class="options-dropdown">
+                        <button class="options-item" data-action="skins">
+                            <span class="item-icon">🎨</span>
+                            <span class="item-text">Skins</span>
+                        </button>
+                        <button class="options-item" data-action="contacts">
+                            <span class="item-icon">👥</span>
+                            <span class="item-text">Contacts</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="sidebar-actions">
+                <button id="newChatBtn" class="new-chat-btn">New Chat</button>
+            </div>
+            <div id="chatsList" class="chats-list">
+                <!-- Chat list will populate here -->
+            </div>
+        </div>
+        
+        <div id="chatArea" class="chat-area">
+            <div class="chat-header">
+                <div class="chat-header-avatar">&#128172;</div>
+                <div class="chat-header-info">
+                    <div id="chatTitle" class="chat-title">Select a chat to start messaging</div>
+                </div>
+                <div class="chat-header-controls">
+                    <button id="refreshBtn" class="refresh-button" title="Refresh messages">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 2v6h-6"/>
+                            <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
+                            <path d="M3 22v-6h6"/>
+                            <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
+                        </svg>
+                    </button>
+                    <div id="updateStatus" class="update-status"></div>
+                    <div class="online-indicator">
+                        Online
+                    </div>
+                </div>
+            </div>
+            <div id="messages" class="messages-container">
+                <!-- Messages will appear here -->
+            </div>
+            <div class="message-input-container">
+                <div class="message-input-wrapper">
+                    <input type="text" id="messageInput" class="message-input" placeholder="Type a message..." disabled>
+                </div>
+                <button id="sendBtn" class="send-btn" disabled>&#10148;</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Skins Modal -->
+    <div id="skinsModal" class="modal-overlay">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2 class="modal-title">Choose Your Skin</h2>
+                <button id="closeSkinsModal" class="modal-close">✕</button>
+            </div>
+            <div class="modal-content">
+                <div class="skins-grid">
+                    <div class="skin-option" data-theme="default">
+                        <div class="skin-preview light-theme">
+                            <div class="preview-header"></div>
+                            <div class="preview-content">
+                                <div class="preview-message sent"></div>
+                                <div class="preview-message received"></div>
+                            </div>
+                        </div>
+                        <div class="skin-info">
+                            <h3 class="skin-name">Light Mode</h3>
+                            <p class="skin-desc">Clean and bright</p>
+                        </div>
+                    </div>
+                    <div class="skin-option" data-theme="dark-mode">
+                        <div class="skin-preview dark-theme">
+                            <div class="preview-header"></div>
+                            <div class="preview-content">
+                                <div class="preview-message sent"></div>
+                                <div class="preview-message received"></div>
+                            </div>
+                        </div>
+                        <div class="skin-info">
+                            <h3 class="skin-name">Dark Mode</h3>
+                            <p class="skin-desc">Easy on the eyes</p>
+                        </div>
+                    </div>
+                    <div class="skin-option" data-theme="midnight">
+                        <div class="skin-preview midnight-theme">
+                            <div class="preview-header"></div>
+                            <div class="preview-content">
+                                <div class="preview-message sent"></div>
+                                <div class="preview-message received"></div>
+                            </div>
+                        </div>
+                        <div class="skin-info">
+                            <h3 class="skin-name">Midnight</h3>
+                            <p class="skin-desc">Deep and elegant</p>
+                        </div>
+                    </div>
+                    <div class="skin-option" data-theme="neon">
+                        <div class="skin-preview neon-theme">
+                            <div class="preview-header"></div>
+                            <div class="preview-content">
+                                <div class="preview-message sent"></div>
+                                <div class="preview-message received"></div>
+                            </div>
+                        </div>
+                        <div class="skin-info">
+                            <h3 class="skin-name">Cyber</h3>
+                            <p class="skin-desc">Futuristic glow</p>
+                        </div>
+                    </div>
+                    <div class="skin-option" data-theme="retro98">
+                        <div class="skin-preview retro-theme">
+                            <div class="preview-header"></div>
+                            <div class="preview-content">
+                                <div class="preview-message sent"></div>
+                                <div class="preview-message received"></div>
+                            </div>
+                        </div>
+                        <div class="skin-info">
+                            <h3 class="skin-name">Retro98</h3>
+                            <p class="skin-desc">Classic Windows style</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Chat Modal -->
+    <div id="createChatModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">New Chat</h3>
+                <button onclick="closeCreateChatModal()" class="modal-close">×</button>
+            </div>
+
+            <form id="createChatForm" class="modal-form">
+                <div class="form-field">
+                    <label>Chat Nickname (Public)</label>
+                    <input type="text" id="chatNickname" placeholder="e.g. Work Discussion, Friend Chat" class="form-input">
+                    <small>
+                        This nickname will be visible to all chat participants
+                    </small>
+                </div>
+
+                <div class="form-field">
+                    <label>Recipient Address</label>
+                    <div class="recipient-input-group">
+                        <input type="text" id="recipientAddress" placeholder="Enter Arweave address..." class="form-input monospace">
+                        <button type="button" id="contactPickerBtn" class="contact-picker-btn" title="Choose from contacts">👥</button>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" onclick="closeCreateChatModal()" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn-primary">Create Chat</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Contacts Modal -->
+    <div id="contactsModal" class="modal-overlay">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2 class="modal-title">Contacts</h2>
+                <button id="closeContactsModal" class="modal-close">✕</button>
+            </div>
+            <div class="modal-content">
+                <div class="contacts-toolbar">
+                    <div class="contacts-search">
+                        <input type="text" id="contactsSearch" placeholder="Search contacts..." class="search-input">
+                    </div>
+                    <button id="addContactBtn" class="btn-primary">Add Contact</button>
+                </div>
+                <div id="contactsList" class="contacts-list">
+                    <div class="contacts-empty">
+                        <p>No contacts yet. Click "Add Contact" to get started.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Contact Modal -->
+    <div id="addContactModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Add Contact</h3>
+                <button onclick="closeAddContactModal()" class="modal-close">×</button>
+            </div>
+
+            <form id="addContactForm" class="modal-form">
+                <div class="form-field">
+                    <label>Contact Name</label>
+                    <input type="text" id="contactName" placeholder="e.g. Alice, Bob" class="form-input" required>
+                    <small>A friendly name to identify this contact</small>
+                </div>
+
+                <div class="form-field">
+                    <label>Arweave Address</label>
+                    <input type="text" id="contactAddress" placeholder="Enter Arweave address..." class="form-input monospace" required>
+                    <small>The contact's Arweave wallet address</small>
+                </div>
+
+                <div class="form-field">
+                    <label>Email (Optional)</label>
+                    <input type="email" id="contactEmail" placeholder="contact@example.com" class="form-input">
+                    <small>Email address for additional contact methods</small>
+                </div>
+
+                <div class="form-field">
+                    <label>Phone Number (Optional)</label>
+                    <input type="tel" id="contactPhone" placeholder="+1 (555) 123-4567" class="form-input">
+                    <small>Phone number for offline contact</small>
+                </div>
+
+                <div class="form-field">
+                    <label>X (Twitter) Profile (Optional)</label>
+                    <input type="text" id="contactTwitter" placeholder="@username or https://x.com/username" class="form-input">
+                    <small>X (formerly Twitter) profile for social contact</small>
+                </div>
+
+                <div class="form-field">
+                    <label>LinkedIn Profile (Optional)</label>
+                    <input type="url" id="contactLinkedIn" placeholder="https://linkedin.com/in/username" class="form-input">
+                    <small>LinkedIn profile for professional contact</small>
+                </div>
+
+                <div class="form-field">
+                    <label>Company/Organization (Optional)</label>
+                    <input type="text" id="contactCompany" placeholder="Company Name" class="form-input">
+                    <small>Workplace or organization</small>
+                </div>
+
+                <div class="form-field">
+                    <label>Website (Optional)</label>
+                    <input type="url" id="contactWebsite" placeholder="https://example.com" class="form-input">
+                    <small>Personal or professional website</small>
+                </div>
+
+                <div class="form-field">
+                    <label>Notes (Optional)</label>
+                    <textarea id="contactNotes" placeholder="Add any notes about this contact..." class="form-input" rows="3"></textarea>
+                    <small>Personal notes visible only to you</small>
+                </div>
+
+                <div class="form-field">
+                    <label>Tags (Optional)</label>
+                    <input type="text" id="contactTags" placeholder="e.g. work, friend, family, client" class="form-input">
+                    <small>Comma-separated tags for organizing contacts</small>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" onclick="closeAddContactModal()" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn-primary">Add Contact</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Contact Picker Modal (for chat creation) -->
+    <div id="contactSelectorModal" class="modal-overlay">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 class="modal-title">Select Contact</h3>
+                <button id="closeContactSelectorModal" class="modal-close">×</button>
+            </div>
+            <div class="modal-content">
+                <div class="contacts-search">
+                    <input type="text" id="contactSelectorSearch" placeholder="Search contacts..." class="search-input">
+                </div>
+                <div id="contactSelectorList" class="contact-selector-list">
+                    <div class="contacts-empty">
+                        <p>No contacts available. Add contacts first to use this feature.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Contact Item Template -->
+    <template id="contactItemTemplate">
+        <div class="contact-item" data-contact-id="">
+            <div class="contact-header">
+                <div class="contact-name"></div>
+                <div class="contact-company"></div>
+            </div>
+            <div class="contact-address"></div>
+            <div class="contact-detail contact-email">📧 <span></span></div>
+            <div class="contact-detail contact-phone">📱 <span></span></div>
+            <div class="contact-detail contact-twitter">🐦 <span></span></div>
+            <div class="contact-detail contact-linkedin">💼 <a href="" target="_blank">LinkedIn</a></div>
+            <div class="contact-detail contact-website">🌐 <a href="" target="_blank">Website</a></div>
+            <div class="contact-notes"></div>
+            <div class="contact-tags"></div>
+            <div class="contact-actions">
+                <button class="contact-action-btn contact-chat-btn" title="Start Chat">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                </button>
+                <button class="contact-action-btn contact-edit-btn" title="Edit Contact">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                        <path d="m18.5 2.5 a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                </button>
+                <button class="contact-action-btn contact-more-btn" title="More Actions">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="1"/>
+                        <circle cx="19" cy="12" r="1"/>
+                        <circle cx="5" cy="12" r="1"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </template>
+
+    <!-- Emoji Picker Modal -->
+    <div id="emojiPickerModal" class="modal-overlay">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 class="modal-title">React with emoji</h3>
+                <button id="closeEmojiPicker" class="modal-close">×</button>
+            </div>
+            <div class="modal-content">
+                <div class="emoji-picker-tabs">
+                    <button class="emoji-tab active" data-category="quick">Quick</button>
+                    <button class="emoji-tab" data-category="faces">Faces</button>
+                    <button class="emoji-tab" data-category="gestures">Hands</button>
+                    <button class="emoji-tab" data-category="hearts">Hearts</button>
+                    <button class="emoji-tab" data-category="objects">Objects</button>
+                    <button class="emoji-tab" data-category="tech">Tech</button>
+                </div>
+                <div class="emoji-picker-content">
+                    <div id="emojiGrid" class="emoji-grid"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="legacy-hypergram-js.js"> </script>
+</body>
+</html>
