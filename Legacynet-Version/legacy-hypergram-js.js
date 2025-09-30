@@ -1249,11 +1249,13 @@ import { EmojiPalette, EmojiUtils } from "./emoji-palette.js";
                         if (chatsData && chatsData !== '{}' && chatsData !== 'null') {
                             const processChats = JSON.parse(chatsData);
                             
-                            // Add process source info to each chat (skip contacts data fields)
+                            // Add process source info to each chat (skip metadata fields)
                             Object.keys(processChats).forEach(chatId => {
-                                // Skip contacts data fields - only add sourceProcessId to actual chat objects
-                                if (chatId.startsWith('_contacts') || chatId === '_contactsData' || chatId === '_contactsStateHash') {
-                                    return; // Skip contacts fields
+                                // Skip metadata fields - only add sourceProcessId to actual chat objects
+                                if (chatId.startsWith('_contacts') || chatId === '_contactsData' || chatId === '_contactsStateHash' ||
+                                    chatId === '_BUILD_VERSION' || chatId === '_MASTER_VERSION' ||
+                                    chatId === '_USER_PROCESS_VERSION' || chatId === '_FRONTEND_VERSION') {
+                                    return; // Skip metadata fields
                                 }
                                 processChats[chatId].sourceProcessId = processId;
                             });
@@ -3237,7 +3239,7 @@ import { EmojiPalette, EmojiUtils } from "./emoji-palette.js";
                             throw new Error('Empty cache with server messages - need to refresh');
                         }
                     } catch (parseError) {
-                        console.error('❌ Failed to parse cached recipient messages or need refresh:', parseError);
+                        console.warn('❌', parseError);
                         
                         // Decrypt from server
                         console.log('🔐 Decrypting conversation messages from server (requires signature)');
@@ -4030,9 +4032,11 @@ import { EmojiPalette, EmojiUtils } from "./emoji-palette.js";
                 const lastSeenStateHashes = JSON.parse(localStorage.getItem('lastSeenStateHashes') || '{}');
                 
                 Object.keys(allChatsCache).forEach(chatId => {
-                    // Skip contacts data fields - only process actual chat objects
-                    if (chatId.startsWith('_contacts') || chatId === '_contactsData' || chatId === '_contactsStateHash') {
-                        return; // Skip contacts fields
+                    // Skip metadata fields - only process actual chat objects
+                    if (chatId.startsWith('_contacts') || chatId === '_contactsData' || chatId === '_contactsStateHash' ||
+                        chatId === '_BUILD_VERSION' || chatId === '_MASTER_VERSION' ||
+                        chatId === '_USER_PROCESS_VERSION' || chatId === '_FRONTEND_VERSION') {
+                        return; // Skip metadata fields
                     }
 
                     const chat = allChatsCache[chatId];
