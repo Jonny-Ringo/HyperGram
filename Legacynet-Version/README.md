@@ -862,11 +862,11 @@ HyperGram/
 
 This project is under active development. Focus areas:
 
-1. **Multi-device sync** - Support same wallet across devices
-2. **Public chat discovery** - Find and join public channels
-3. **Mobile responsiveness** - Optimize UI for mobile browsers
-4. **Performance optimization** - Reduce encryption overhead
+1. **Public chat discovery** - Find and join public channels
+2. **Mobile responsiveness** - Optimize UI for mobile browsers
+3. **Performance optimization** - Reduce encryption overhead (recent leaps made in this!)
 
 ---
 
 **HyperGram** - Permanent, private group messaging for the decentralized web
+
