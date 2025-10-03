@@ -614,13 +614,13 @@ async getArweavePublicKey(address) {
 
 ### Fallback Strategy (Deferred)
 
-`hybridCrypto` module has fallback methods but they are **optional** for this sprint. GraphQL is the authoritative source.
+`hybridCrypto` module has fallback methods to sign for the key but this may be implemented in the enar future. GraphQL is the fastest source typically.
 
 ### Requirements
 
 Recipients must have:
 - ✅ At least one signed transaction on Arweave (to establish public key on-chain)
-- ❌ Cannot add users who have never signed a transaction
+- ❌ Cannot add users who have never signed a transaction - Also want to create an "onboarding" where they sign one transaction making them forever able to chat whit anyone.
 
 ---
 
@@ -869,4 +869,5 @@ This project is under active development. Focus areas:
 ---
 
 **HyperGram** - Permanent, private group messaging for the decentralized web
+
 
